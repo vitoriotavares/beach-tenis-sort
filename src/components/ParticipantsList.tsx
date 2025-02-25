@@ -1,30 +1,82 @@
 'use client'
 
-import { useState } from 'react'
-import { CreditCardIcon, CheckCircleIcon } from '@heroicons/react/24/outline'
+import { useState, useEffect } from 'react'
+import { CheckCircleIcon, CreditCardIcon } from '@heroicons/react/24/solid'
 import { PlayerAvatar } from './PlayerAvatar'
 import { PaymentModal } from './PaymentModal'
+import { getTournamentParticipants, updateParticipant } from '@/lib/supabase/queries'
 
-interface Participant {
-  id: number
-  name: string
-  paid: boolean
-  checkedIn: boolean
+interface ParticipantsListProps {
+  tournamentId: string
 }
 
-export function ParticipantsList() {
+interface Participant {
+  id: string
+  name: string
+  email: string
+  phone: string
+  paid: boolean
+  checked_in: boolean
+}
+
+export function ParticipantsList({ tournamentId }: ParticipantsListProps) {
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false)
   const [selectedParticipant, setSelectedParticipant] = useState<Participant | null>(null)
-  const [participants] = useState<Participant[]>([
-    { id: 1, name: 'João Silva', paid: false, checkedIn: false },
-    { id: 2, name: 'Maria Santos', paid: true, checkedIn: true },
-    { id: 3, name: 'Pedro Oliveira', paid: false, checkedIn: false },
-    { id: 4, name: 'Ana Costa', paid: true, checkedIn: false },
-  ])
+  const [participants, setParticipants] = useState<Participant[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+
+  useEffect(() => {
+    async function loadParticipants() {
+      try {
+        const data = await getTournamentParticipants(tournamentId)
+        setParticipants(data)
+      } catch (err) {
+        console.error('Error loading participants:', err)
+        setError('Erro ao carregar participantes')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadParticipants()
+  }, [tournamentId])
 
   const handleOpenPayment = (participant: Participant) => {
     setSelectedParticipant(participant)
     setIsPaymentModalOpen(true)
+  }
+
+  const handlePaymentSuccess = async (participantId: string) => {
+    try {
+      const updatedParticipant = await updateParticipant(participantId, { paid: true })
+      setParticipants(participants.map(p => 
+        p.id === participantId ? { ...p, paid: true } : p
+      ))
+      setIsPaymentModalOpen(false)
+    } catch (err) {
+      console.error('Error updating payment:', err)
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="bg-white shadow rounded-lg overflow-hidden">
+        <div className="p-4 text-center text-sm text-gray-500">
+          Carregando participantes...
+        </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="bg-white shadow rounded-lg overflow-hidden">
+        <div className="p-4 text-center text-sm text-red-500">
+          {error}
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -70,13 +122,13 @@ export function ParticipantsList() {
                   {/* Status de Check-in */}
                   <span 
                     className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${
-                      participant.checkedIn 
+                      participant.checked_in 
                         ? 'bg-blue-50 text-blue-700' 
                         : 'bg-gray-100 text-gray-600'
                     }`}
                   >
-                    {participant.checkedIn && <CheckCircleIcon className="h-3.5 w-3.5" />}
-                    {participant.checkedIn ? 'Check-in realizado' : 'Aguardando check-in'}
+                    {participant.checked_in && <CheckCircleIcon className="h-3.5 w-3.5" />}
+                    {participant.checked_in ? 'Check-in realizado' : 'Aguardando check-in'}
                   </span>
                 </div>
               </div>
@@ -95,6 +147,7 @@ export function ParticipantsList() {
         <PaymentModal
           isOpen={isPaymentModalOpen}
           onClose={() => setIsPaymentModalOpen(false)}
+          onSuccess={() => handlePaymentSuccess(selectedParticipant.id)}
           amount={50.00}
           participant={selectedParticipant.name}
         />

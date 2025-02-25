@@ -1,150 +1,139 @@
-'use client';
+'use client'
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-
-interface FormData {
-  name: string;
-  date: string;
-  location: string;
-  maxParticipants: string;
-  registrationFee: string;
-  description: string;
-}
+import { useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { createTournament } from '@/lib/supabase/queries'
 
 export function TournamentForm() {
-  const router = useRouter();
-  const [formData, setFormData] = useState<FormData>({
-    name: '',
-    date: '',
-    location: '',
-    maxParticipants: '',
-    registrationFee: '',
-    description: ''
-  });
+  const router = useRouter()
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [error, setError] = useState('')
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    // TODO: Implement form submission
-    router.push('/tournaments/1');
-  };
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    setIsSubmitting(true)
+    setError('')
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-  };
+    const formData = new FormData(e.currentTarget)
+    const data = {
+      title: formData.get('title') as string,
+      date: formData.get('date') as string,
+      location: formData.get('location') as string,
+      start_time: formData.get('start_time') as string,
+      end_time: formData.get('end_time') as string,
+      max_participants: parseInt(formData.get('max_participants') as string),
+    }
+
+    try {
+      await createTournament(data)
+      router.push('/')
+      router.refresh()
+    } catch (err) {
+      setError('Erro ao criar torneio. Por favor, tente novamente.')
+      console.error(err)
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
+      {error && (
+        <div className="rounded-md bg-red-50 p-4">
+          <p className="text-sm text-red-700">{error}</p>
+        </div>
+      )}
+
       <div>
-        <label htmlFor="name" className="block text-sm font-medium text-gray-700">
+        <label htmlFor="title" className="block text-sm font-medium text-ocean-900">
           Nome do Torneio
         </label>
         <input
           type="text"
-          id="name"
-          name="name"
-          className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-primary-500 focus:outline-none focus:ring-primary-500"
-          value={formData.name}
-          onChange={handleChange}
+          name="title"
+          id="title"
           required
+          className="mt-1 block w-full rounded-md border border-sand-300 bg-white/50 py-2 px-3 shadow-sm focus:border-sunset-500 focus:outline-none focus:ring-1 focus:ring-sunset-500"
         />
       </div>
 
-      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+      <div>
+        <label htmlFor="date" className="block text-sm font-medium text-ocean-900">
+          Data
+        </label>
+        <input
+          type="date"
+          name="date"
+          id="date"
+          required
+          className="mt-1 block w-full rounded-md border border-sand-300 bg-white/50 py-2 px-3 shadow-sm focus:border-sunset-500 focus:outline-none focus:ring-1 focus:ring-sunset-500"
+        />
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
         <div>
-          <label htmlFor="date" className="block text-sm font-medium text-gray-700">
-            Data
+          <label htmlFor="start_time" className="block text-sm font-medium text-ocean-900">
+            Horário de Início
           </label>
           <input
-            type="date"
-            id="date"
-            name="date"
-            className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-primary-500 focus:outline-none focus:ring-primary-500"
-            value={formData.date}
-            onChange={handleChange}
+            type="time"
+            name="start_time"
+            id="start_time"
             required
+            className="mt-1 block w-full rounded-md border border-sand-300 bg-white/50 py-2 px-3 shadow-sm focus:border-sunset-500 focus:outline-none focus:ring-1 focus:ring-sunset-500"
           />
         </div>
 
         <div>
-          <label htmlFor="maxParticipants" className="block text-sm font-medium text-gray-700">
-            Número Máximo de Participantes
+          <label htmlFor="end_time" className="block text-sm font-medium text-ocean-900">
+            Horário de Término
           </label>
           <input
-            type="number"
-            id="maxParticipants"
-            name="maxParticipants"
-            className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-primary-500 focus:outline-none focus:ring-primary-500"
-            value={formData.maxParticipants}
-            onChange={handleChange}
+            type="time"
+            name="end_time"
+            id="end_time"
             required
+            className="mt-1 block w-full rounded-md border border-sand-300 bg-white/50 py-2 px-3 shadow-sm focus:border-sunset-500 focus:outline-none focus:ring-1 focus:ring-sunset-500"
           />
         </div>
       </div>
 
       <div>
-        <label htmlFor="location" className="block text-sm font-medium text-gray-700">
+        <label htmlFor="location" className="block text-sm font-medium text-ocean-900">
           Local
         </label>
         <input
           type="text"
-          id="location"
           name="location"
-          className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-primary-500 focus:outline-none focus:ring-primary-500"
-          value={formData.location}
-          onChange={handleChange}
+          id="location"
           required
+          className="mt-1 block w-full rounded-md border border-sand-300 bg-white/50 py-2 px-3 shadow-sm focus:border-sunset-500 focus:outline-none focus:ring-1 focus:ring-sunset-500"
         />
       </div>
 
       <div>
-        <label htmlFor="registrationFee" className="block text-sm font-medium text-gray-700">
-          Taxa de Inscrição (R$)
+        <label htmlFor="max_participants" className="block text-sm font-medium text-ocean-900">
+          Número Máximo de Participantes
         </label>
         <input
           type="number"
-          id="registrationFee"
-          name="registrationFee"
-          className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-primary-500 focus:outline-none focus:ring-primary-500"
-          value={formData.registrationFee}
-          onChange={handleChange}
+          name="max_participants"
+          id="max_participants"
+          min="2"
           required
+          className="mt-1 block w-full rounded-md border border-sand-300 bg-white/50 py-2 px-3 shadow-sm focus:border-sunset-500 focus:outline-none focus:ring-1 focus:ring-sunset-500"
         />
       </div>
 
-      <div>
-        <label htmlFor="description" className="block text-sm font-medium text-gray-700">
-          Descrição
-        </label>
-        <textarea
-          id="description"
-          name="description"
-          rows={4}
-          className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-primary-500 focus:outline-none focus:ring-primary-500"
-          value={formData.description}
-          onChange={handleChange}
-        />
-      </div>
-
-      <div className="flex justify-end gap-4">
-        <button
-          type="button"
-          onClick={() => router.back()}
-          className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
-        >
-          Cancelar
-        </button>
+      <div className="flex justify-end">
         <button
           type="submit"
-          className="rounded-md bg-primary-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
+          disabled={isSubmitting}
+          className="rounded-md bg-sunset-500 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-sunset-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sunset-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          Criar Torneio
+          {isSubmitting ? 'Criando...' : 'Criar Torneio'}
         </button>
       </div>
     </form>
-  );
+  )
 }

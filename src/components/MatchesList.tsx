@@ -1,14 +1,17 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { PlusIcon, PlayIcon, StopIcon, ArrowPathIcon } from '@heroicons/react/24/outline'
 import { CreateMatchModal } from './CreateMatchModal'
 import { PlayerAvatar } from './PlayerAvatar'
+import { getCheckedInParticipants, getTournamentMatches, updateMatch, createMatch } from '@/lib/supabase/queries'
 
 interface Match {
-  id: number
-  team1: string[]
-  team2: string[]
+  id: string
+  team1_player1_id: string
+  team1_player2_id: string
+  team2_player1_id: string
+  team2_player2_id: string
   score1: number
   score2: number
   court: string
@@ -25,7 +28,7 @@ function TeamAvatars({ players, className = '' }: TeamAvatarsProps) {
     <div className={`flex -space-x-3 ${className}`}>
       {players.map((player, index) => (
         <PlayerAvatar
-          key={player}
+          key={`${player}-${index}`}
           name={player}
           size="sm"
           className={index === 0 ? '' : 'ring-2 ring-white'}
@@ -35,120 +38,149 @@ function TeamAvatars({ players, className = '' }: TeamAvatarsProps) {
   );
 }
 
-export function MatchesList() {
+interface MatchesListProps {
+  tournamentId: string
+}
+
+export function MatchesList({ tournamentId }: MatchesListProps) {
   const [isModalOpen, setIsModalOpen] = useState(false)
-  const [matches, setMatches] = useState<Match[]>([
-    {
-      id: 1,
-      team1: ['João Silva', 'Maria Santos'],
-      team2: ['Pedro Oliveira', 'Ana Costa'],
-      score1: 2,
-      score2: 1,
-      court: 'Quadra 1',
-      status: 'pending',
-    },
-  ])
+  const [matches, setMatches] = useState<Match[]>([])
+  const [availablePlayers, setAvailablePlayers] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
 
-  // Simulating available players - in a real app, this would come from props or context
-  const availablePlayers = [
-    'João Silva',
-    'Maria Santos',
-    'Pedro Oliveira',
-    'Ana Costa',
-    'Carlos Souza',
-    'Beatriz Lima'
-  ]
-
-  const handleScoreUpdate = (matchId: number, team: 1 | 2) => {
-    setMatches(matches.map(match => {
-      if (match.id === matchId) {
-        return {
-          ...match,
-          score1: team === 1 ? match.score1 + 1 : match.score1,
-          score2: team === 2 ? match.score2 + 1 : match.score2,
-        }
+  useEffect(() => {
+    async function loadData() {
+      try {
+        const [players, matchesData] = await Promise.all([
+          getCheckedInParticipants(tournamentId),
+          getTournamentMatches(tournamentId)
+        ])
+        setAvailablePlayers(players)
+        setMatches(matchesData)
+      } catch (err) {
+        console.error('Error loading data:', err)
+        setError('Erro ao carregar dados')
+      } finally {
+        setLoading(false)
       }
-      return match
-    }))
+    }
+
+    loadData()
+  }, [tournamentId])
+
+  const handleScoreUpdate = async (matchId: string, team: 1 | 2) => {
+    try {
+      const match = matches.find(m => m.id === matchId)
+      if (!match) return
+
+      const updatedMatch = await updateMatch(matchId, {
+        score1: team === 1 ? match.score1 + 1 : match.score1,
+        score2: team === 2 ? match.score2 + 1 : match.score2
+      })
+
+      setMatches(matches.map(m => m.id === matchId ? updatedMatch : m))
+    } catch (err) {
+      console.error('Error updating match score:', err)
+    }
   }
 
-  const handleCreateMatch = ({
-    team1,
-    team2,
+  const handleCreateMatch = async ({
+    team1_player1_id,
+    team1_player2_id,
+    team2_player1_id,
+    team2_player2_id,
     court,
   }: {
-    team1: string[]
-    team2: string[]
+    team1_player1_id: string
+    team1_player2_id: string
+    team2_player1_id: string
+    team2_player2_id: string
     court: string
   }) => {
-    const newMatch: Match = {
-      id: matches.length + 1,
-      team1,
-      team2,
-      score1: 0,
-      score2: 0,
-      court,
-      status: 'pending',
+    try {
+      console.log('Creating match with:', {
+        team1_player1_id,
+        team1_player2_id,
+        team2_player1_id,
+        team2_player2_id,
+        court,
+      })
+
+      const match = await createMatch({
+        tournament_id: tournamentId,
+        team1_player1_id,
+        team1_player2_id,
+        team2_player1_id,
+        team2_player2_id,
+        court,
+      })
+      
+      setMatches([match, ...matches])
+      setIsModalOpen(false)
+    } catch (err) {
+      console.error('Error creating match:', err)
     }
-    setMatches([...matches, newMatch])
   }
 
-  const handleStartMatch = (matchId: number) => {
-    setMatches(matches.map(match => {
-      if (match.id === matchId) {
-        return {
-          ...match,
-          status: 'in_progress',
-        }
-      }
-      return match
-    }))
+  const handleStartMatch = async (matchId: string) => {
+    try {
+      const updatedMatch = await updateMatch(matchId, { status: 'in_progress' })
+      setMatches(matches.map(m => m.id === matchId ? updatedMatch : m))
+    } catch (err) {
+      console.error('Error starting match:', err)
+    }
   }
 
-  const handleFinishMatch = (matchId: number) => {
-    setMatches(matches.map(match => {
-      if (match.id === matchId) {
-        return {
-          ...match,
-          status: 'completed',
-        }
-      }
-      return match
-    }))
+  const handleFinishMatch = async (matchId: string) => {
+    try {
+      const updatedMatch = await updateMatch(matchId, { status: 'completed' })
+      setMatches(matches.map(m => m.id === matchId ? updatedMatch : m))
+    } catch (err) {
+      console.error('Error finishing match:', err)
+    }
   }
 
-  const handleReopenMatch = (matchId: number) => {
-    setMatches(matches.map(match => {
-      if (match.id === matchId) {
-        return {
-          ...match,
-          status: 'in_progress',
-        }
-      }
-      return match
-    }))
+  const handleReopenMatch = async (matchId: string) => {
+    try {
+      const updatedMatch = await updateMatch(matchId, { status: 'in_progress' })
+      setMatches(matches.map(m => m.id === matchId ? updatedMatch : m))
+    } catch (err) {
+      console.error('Error reopening match:', err)
+    }
   }
 
   const getStatusBadgeColor = (status: Match['status']) => {
     switch (status) {
       case 'pending':
-        return 'bg-gray-100 text-gray-800'
+        return 'bg-gray-100 text-gray-700'
       case 'in_progress':
-        return 'bg-blue-100 text-blue-800'
+        return 'bg-yellow-100 text-yellow-800'
       case 'completed':
         return 'bg-green-100 text-green-800'
+      default:
+        return 'bg-gray-100 text-gray-700'
     }
   }
 
-  const getStatusText = (status: Match['status']) => {
-    switch (status) {
-      case 'pending':
-        return 'Aguardando'
-      case 'in_progress':
-        return 'Em andamento'
-      case 'completed':
-        return 'Finalizada'
-    }
+  if (loading) {
+    return (
+      <div className="bg-white shadow rounded-lg overflow-hidden">
+        <div className="p-4 text-center text-sm text-gray-500">
+          Carregando dados...
+        </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="bg-white shadow rounded-lg overflow-hidden">
+        <div className="p-4 text-center text-sm text-red-500">
+          {error}
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -169,74 +201,92 @@ export function MatchesList() {
         <div className="divide-y divide-gray-200">
           {matches.map((match) => (
             <div key={match.id} className="p-4">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-3">
-                  <span className="text-sm text-gray-500">{match.court}</span>
-                  <div className="flex items-center gap-2">
-                    {match.status === 'pending' && (
-                      <button
-                        onClick={() => handleStartMatch(match.id)}
-                        className="inline-flex items-center gap-1 rounded-md bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700 hover:bg-blue-100"
-                      >
-                        <PlayIcon className="h-4 w-4" />
-                        Iniciar
-                      </button>
-                    )}
-                    {match.status === 'in_progress' && (
-                      <button
-                        onClick={() => handleFinishMatch(match.id)}
-                        className="inline-flex items-center gap-1 rounded-md bg-green-50 px-2 py-1 text-xs font-medium text-green-700 hover:bg-green-100"
-                      >
-                        <StopIcon className="h-4 w-4" />
-                        Finalizar
-                      </button>
-                    )}
-                    {match.status === 'completed' && (
-                      <button
-                        onClick={() => handleReopenMatch(match.id)}
-                        className="inline-flex items-center gap-1 rounded-md bg-yellow-50 px-2 py-1 text-xs font-medium text-yellow-700 hover:bg-yellow-100"
-                      >
-                        <ArrowPathIcon className="h-4 w-4" />
-                        Reabrir
-                      </button>
-                    )}
-                  </div>
-                </div>
-                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusBadgeColor(match.status)}`}>
-                  {getStatusText(match.status)}
+              {/* Status e Quadra */}
+              <div className="flex items-center justify-between mb-3 text-sm">
+                <span className="text-gray-500">{match.court}</span>
+                <span className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ${getStatusBadgeColor(match.status)}`}>
+                  {match.status === 'pending' && 'Aguardando'}
+                  {match.status === 'in_progress' && 'Em andamento'}
+                  {match.status === 'completed' && 'Finalizada'}
                 </span>
               </div>
 
-              <div className="flex items-center justify-between">
-                <div className="flex-1">
+              {/* Times e Placar */}
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                {/* Time 1 */}
+                <div className="flex items-center gap-3 flex-1">
                   <TeamAvatars players={match.team1} />
-                  {match.status === 'in_progress' && (
-                    <button
-                      onClick={() => handleScoreUpdate(match.id, 1)}
-                      className="mt-2 btn-secondary text-xs"
-                    >
-                      + Ponto
-                    </button>
-                  )}
-                </div>
-
-                <div className="mx-4 text-center">
-                  <div className="text-2xl font-bold text-gray-900">
-                    {match.score1} - {match.score2}
+                  <div className="text-sm text-gray-900">
+                    {match.team1.join(' & ')}
                   </div>
                 </div>
 
-                <div className="flex-1 flex flex-col items-end">
-                  <TeamAvatars players={match.team2} />
-                  {match.status === 'in_progress' && (
-                    <button
-                      onClick={() => handleScoreUpdate(match.id, 2)}
-                      className="mt-2 btn-secondary text-xs"
-                    >
-                      + Ponto
-                    </button>
-                  )}
+                {/* Placar */}
+                <div className="flex items-center justify-center gap-3 font-mono text-xl font-semibold text-gray-900 min-w-[80px]">
+                  <span>{match.score1}</span>
+                  <span className="text-gray-400">-</span>
+                  <span>{match.score2}</span>
                 </div>
+
+                {/* Time 2 */}
+                <div className="flex items-center gap-3 flex-1 justify-end">
+                  <div className="text-sm text-gray-900 text-right">
+                    {match.team2.join(' & ')}
+                  </div>
+                  <TeamAvatars players={match.team2} />
+                </div>
+              </div>
+
+              {/* Ações */}
+              <div className="flex justify-end mt-3 gap-2">
+                {match.status === 'pending' && (
+                  <button
+                    type="button"
+                    onClick={() => handleStartMatch(match.id)}
+                    className="inline-flex items-center gap-1 rounded-md bg-primary-50 px-2 py-1 text-xs font-medium text-primary-700 hover:bg-primary-100"
+                  >
+                    <PlayIcon className="h-4 w-4" />
+                    <span className="hidden sm:inline">Iniciar</span>
+                  </button>
+                )}
+
+                {match.status === 'in_progress' && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => handleScoreUpdate(match.id, 1)}
+                      className="inline-flex items-center gap-1 rounded-md bg-primary-50 px-2 py-1 text-xs font-medium text-primary-700 hover:bg-primary-100"
+                    >
+                      +1 T1
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleScoreUpdate(match.id, 2)}
+                      className="inline-flex items-center gap-1 rounded-md bg-primary-50 px-2 py-1 text-xs font-medium text-primary-700 hover:bg-primary-100"
+                    >
+                      +1 T2
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleFinishMatch(match.id)}
+                      className="inline-flex items-center gap-1 rounded-md bg-primary-50 px-2 py-1 text-xs font-medium text-primary-700 hover:bg-primary-100"
+                    >
+                      <StopIcon className="h-4 w-4" />
+                      <span className="hidden sm:inline">Finalizar</span>
+                    </button>
+                  </>
+                )}
+
+                {match.status === 'completed' && (
+                  <button
+                    type="button"
+                    onClick={() => handleReopenMatch(match.id)}
+                    className="inline-flex items-center gap-1 rounded-md bg-primary-50 px-2 py-1 text-xs font-medium text-primary-700 hover:bg-primary-100"
+                  >
+                    <ArrowPathIcon className="h-4 w-4" />
+                    <span className="hidden sm:inline">Reabrir</span>
+                  </button>
+                )}
               </div>
             </div>
           ))}
@@ -254,6 +304,7 @@ export function MatchesList() {
         onClose={() => setIsModalOpen(false)}
         onCreateMatch={handleCreateMatch}
         availablePlayers={availablePlayers}
+        tournamentId={tournamentId}
       />
     </>
   )
