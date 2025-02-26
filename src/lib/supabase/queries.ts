@@ -93,6 +93,7 @@ export async function createParticipant(participant: {
     .insert({
       ...participant,
       paid: false,
+      checked_in: false,
     })
     .select()
     .single()
@@ -110,6 +111,7 @@ export async function getCheckedInParticipants(tournamentId: string) {
     .from('participants')
     .select('id, name')
     .eq('tournament_id', tournamentId)
+    .eq('checked_in', true)
     .order('name')
 
   if (error) {
@@ -117,12 +119,37 @@ export async function getCheckedInParticipants(tournamentId: string) {
     throw error
   }
 
-  return data
+  return data || []
+}
+
+export async function getAllParticipants(tournamentId: string) {
+  const { data, error } = await supabase
+    .from('participants')
+    .select('id, name')
+    .eq('tournament_id', tournamentId)
+    .order('name')
+
+  if (error) {
+    console.error('Error fetching all participants:', error)
+    throw error
+  }
+
+  return data || []
 }
 
 // Matches
-export async function getTournamentMatches(tournamentId: string) {
-  const { data, error } = await supabase
+interface MatchResult {
+  id: string;
+  court: string;
+  score1: number;
+  score2: number;
+  status: 'pending' | 'in_progress' | 'completed';
+  team1: string[];
+  team2: string[];
+}
+
+export async function getTournamentMatches(tournamentId: string): Promise<MatchResult[]> {
+  const { data: matches, error } = await supabase
     .from('matches')
     .select(`
       id,
@@ -130,31 +157,78 @@ export async function getTournamentMatches(tournamentId: string) {
       score1,
       score2,
       status,
-      team1_player1:team1_player1_id(id, name),
-      team1_player2:team1_player2_id(id, name),
-      team2_player1:team2_player1_id(id, name),
-      team2_player2:team2_player2_id(id, name)
+      team1_player1:team1_player1_id(name),
+      team1_player2:team1_player2_id(name),
+      team2_player1:team2_player1_id(name),
+      team2_player2:team2_player2_id(name)
     `)
     .eq('tournament_id', tournamentId)
     .order('created_at', { ascending: false })
 
   if (error) {
-    console.error('Error fetching tournament matches:', error)
+    console.error('Error fetching matches:', error)
     throw error
   }
 
-  return data.map(match => ({
-    id: match.id,
-    court: match.court,
-    score1: match.score1,
-    score2: match.score2,
-    status: match.status,
-    team1: [match.team1_player1.name, match.team1_player2.name],
-    team2: [match.team2_player1.name, match.team2_player2.name]
-  }))
+  if (!matches) return []
+
+  // Process the data to ensure it has the correct structure
+  return matches.map((match: any) => {
+    // Safely extract player names
+    let team1Player1Name = '';
+    let team1Player2Name = '';
+    let team2Player1Name = '';
+    let team2Player2Name = '';
+    
+    // Handle team1_player1
+    if (match.team1_player1) {
+      if (Array.isArray(match.team1_player1) && match.team1_player1.length > 0) {
+        team1Player1Name = match.team1_player1[0]?.name ?? '';
+      } else if (typeof match.team1_player1 === 'object') {
+        team1Player1Name = (match.team1_player1 as any)?.name ?? '';
+      }
+    }
+    
+    // Handle team1_player2
+    if (match.team1_player2) {
+      if (Array.isArray(match.team1_player2) && match.team1_player2.length > 0) {
+        team1Player2Name = match.team1_player2[0]?.name ?? '';
+      } else if (typeof match.team1_player2 === 'object') {
+        team1Player2Name = (match.team1_player2 as any)?.name ?? '';
+      }
+    }
+    
+    // Handle team2_player1
+    if (match.team2_player1) {
+      if (Array.isArray(match.team2_player1) && match.team2_player1.length > 0) {
+        team2Player1Name = match.team2_player1[0]?.name ?? '';
+      } else if (typeof match.team2_player1 === 'object') {
+        team2Player1Name = (match.team2_player1 as any)?.name ?? '';
+      }
+    }
+    
+    // Handle team2_player2
+    if (match.team2_player2) {
+      if (Array.isArray(match.team2_player2) && match.team2_player2.length > 0) {
+        team2Player2Name = match.team2_player2[0]?.name ?? '';
+      } else if (typeof match.team2_player2 === 'object') {
+        team2Player2Name = (match.team2_player2 as any)?.name ?? '';
+      }
+    }
+
+    return {
+      id: match.id,
+      court: match.court,
+      score1: match.score1 || 0,
+      score2: match.score2 || 0,
+      status: match.status,
+      team1: [team1Player1Name, team1Player2Name],
+      team2: [team2Player1Name, team2Player2Name]
+    } as MatchResult;
+  });
 }
 
-export async function updateMatch(matchId: string, data: any) {
+export async function updateMatch(matchId: string, data: any): Promise<MatchResult> {
   const { data: updatedMatch, error } = await supabase
     .from('matches')
     .update(data)
@@ -177,15 +251,57 @@ export async function updateMatch(matchId: string, data: any) {
     throw error
   }
 
+  // Safely extract player names
+  let team1Player1Name = '';
+  let team1Player2Name = '';
+  let team2Player1Name = '';
+  let team2Player2Name = '';
+  
+  // Handle team1_player1
+  if (updatedMatch.team1_player1) {
+    if (Array.isArray(updatedMatch.team1_player1) && updatedMatch.team1_player1.length > 0) {
+      team1Player1Name = updatedMatch.team1_player1[0]?.name ?? '';
+    } else if (typeof updatedMatch.team1_player1 === 'object') {
+      team1Player1Name = (updatedMatch.team1_player1 as any)?.name ?? '';
+    }
+  }
+  
+  // Handle team1_player2
+  if (updatedMatch.team1_player2) {
+    if (Array.isArray(updatedMatch.team1_player2) && updatedMatch.team1_player2.length > 0) {
+      team1Player2Name = updatedMatch.team1_player2[0]?.name ?? '';
+    } else if (typeof updatedMatch.team1_player2 === 'object') {
+      team1Player2Name = (updatedMatch.team1_player2 as any)?.name ?? '';
+    }
+  }
+  
+  // Handle team2_player1
+  if (updatedMatch.team2_player1) {
+    if (Array.isArray(updatedMatch.team2_player1) && updatedMatch.team2_player1.length > 0) {
+      team2Player1Name = updatedMatch.team2_player1[0]?.name ?? '';
+    } else if (typeof updatedMatch.team2_player1 === 'object') {
+      team2Player1Name = (updatedMatch.team2_player1 as any)?.name ?? '';
+    }
+  }
+  
+  // Handle team2_player2
+  if (updatedMatch.team2_player2) {
+    if (Array.isArray(updatedMatch.team2_player2) && updatedMatch.team2_player2.length > 0) {
+      team2Player2Name = updatedMatch.team2_player2[0]?.name ?? '';
+    } else if (typeof updatedMatch.team2_player2 === 'object') {
+      team2Player2Name = (updatedMatch.team2_player2 as any)?.name ?? '';
+    }
+  }
+
   return {
     id: updatedMatch.id,
     court: updatedMatch.court,
     score1: updatedMatch.score1,
     score2: updatedMatch.score2,
     status: updatedMatch.status,
-    team1: [updatedMatch.team1_player1.name, updatedMatch.team1_player2.name],
-    team2: [updatedMatch.team2_player1.name, updatedMatch.team2_player2.name]
-  }
+    team1: [team1Player1Name, team1Player2Name],
+    team2: [team2Player1Name, team2Player2Name]
+  } as MatchResult;
 }
 
 export async function createMatch(match: {
@@ -195,7 +311,7 @@ export async function createMatch(match: {
   team2_player1_id: string
   team2_player2_id: string
   court: string
-}) {
+}): Promise<MatchResult> {
   const { data, error } = await supabase
     .from('matches')
     .insert({
@@ -222,15 +338,57 @@ export async function createMatch(match: {
     throw error
   }
 
+  // Safely extract player names
+  let team1Player1Name = '';
+  let team1Player2Name = '';
+  let team2Player1Name = '';
+  let team2Player2Name = '';
+  
+  // Handle team1_player1
+  if (data.team1_player1) {
+    if (Array.isArray(data.team1_player1) && data.team1_player1.length > 0) {
+      team1Player1Name = data.team1_player1[0]?.name ?? '';
+    } else if (typeof data.team1_player1 === 'object') {
+      team1Player1Name = (data.team1_player1 as any)?.name ?? '';
+    }
+  }
+  
+  // Handle team1_player2
+  if (data.team1_player2) {
+    if (Array.isArray(data.team1_player2) && data.team1_player2.length > 0) {
+      team1Player2Name = data.team1_player2[0]?.name ?? '';
+    } else if (typeof data.team1_player2 === 'object') {
+      team1Player2Name = (data.team1_player2 as any)?.name ?? '';
+    }
+  }
+  
+  // Handle team2_player1
+  if (data.team2_player1) {
+    if (Array.isArray(data.team2_player1) && data.team2_player1.length > 0) {
+      team2Player1Name = data.team2_player1[0]?.name ?? '';
+    } else if (typeof data.team2_player1 === 'object') {
+      team2Player1Name = (data.team2_player1 as any)?.name ?? '';
+    }
+  }
+  
+  // Handle team2_player2
+  if (data.team2_player2) {
+    if (Array.isArray(data.team2_player2) && data.team2_player2.length > 0) {
+      team2Player2Name = data.team2_player2[0]?.name ?? '';
+    } else if (typeof data.team2_player2 === 'object') {
+      team2Player2Name = (data.team2_player2 as any)?.name ?? '';
+    }
+  }
+
   return {
     id: data.id,
     court: data.court,
     score1: data.score1,
     score2: data.score2,
     status: data.status,
-    team1: [data.team1_player1.name, data.team1_player2.name],
-    team2: [data.team2_player1.name, data.team2_player2.name]
-  }
+    team1: [team1Player1Name, team1Player2Name],
+    team2: [team2Player1Name, team2Player2Name]
+  } as MatchResult;
 }
 
 // Tournament Status

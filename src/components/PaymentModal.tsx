@@ -9,11 +9,12 @@ import { useState } from 'react'
 interface PaymentModalProps {
   isOpen: boolean
   onClose: () => void
+  onSuccess: () => void
   amount: number
   participant: string
 }
 
-export function PaymentModal({ isOpen, onClose, amount, participant }: PaymentModalProps) {
+export function PaymentModal({ isOpen, onClose, onSuccess, amount, participant }: PaymentModalProps) {
   const [copied, setCopied] = useState(false)
   
   // Em uma aplicação real, esses dados viriam da configuração do torneio
@@ -129,9 +130,29 @@ export function PaymentModal({ isOpen, onClose, amount, participant }: PaymentMo
                 </div>
 
                 <div className="mt-6 border-t border-gray-200 pt-4">
-                  <p className="text-xs text-gray-500 text-center">
+                  <p className="text-xs text-gray-500 text-center mb-4">
                     Após o pagamento, envie o comprovante para o organizador do torneio.
                   </p>
+                  
+                  <div className="flex justify-end">
+                    <button
+                      type="button"
+                      className="inline-flex items-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 mr-2"
+                      onClick={onClose}
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      type="button"
+                      className="inline-flex items-center rounded-md bg-primary-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-500"
+                      onClick={() => {
+                        onSuccess();
+                        onClose();
+                      }}
+                    >
+                      Confirmar Pagamento
+                    </button>
+                  </div>
                 </div>
               </Dialog.Panel>
             </Transition.Child>

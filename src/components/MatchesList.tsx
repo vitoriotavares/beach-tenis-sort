@@ -4,18 +4,21 @@ import { useState, useEffect } from 'react'
 import { PlusIcon, PlayIcon, StopIcon, ArrowPathIcon } from '@heroicons/react/24/outline'
 import { CreateMatchModal } from './CreateMatchModal'
 import { PlayerAvatar } from './PlayerAvatar'
-import { getCheckedInParticipants, getTournamentMatches, updateMatch, createMatch } from '@/lib/supabase/queries'
+import { getAllParticipants, getTournamentMatches, updateMatch, createMatch } from '@/lib/supabase/queries'
+
+interface Participant {
+  id: string
+  name: string
+}
 
 interface Match {
   id: string
-  team1_player1_id: string
-  team1_player2_id: string
-  team2_player1_id: string
-  team2_player2_id: string
+  court: string
   score1: number
   score2: number
-  court: string
   status: 'pending' | 'in_progress' | 'completed'
+  team1: string[]
+  team2: string[]
 }
 
 interface TeamAvatarsProps {
@@ -38,26 +41,23 @@ function TeamAvatars({ players, className = '' }: TeamAvatarsProps) {
   );
 }
 
-interface MatchesListProps {
-  tournamentId: string
-}
-
-export function MatchesList({ tournamentId }: MatchesListProps) {
+export function MatchesList({ tournamentId }: { tournamentId: string }) {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [matches, setMatches] = useState<Match[]>([])
-  const [availablePlayers, setAvailablePlayers] = useState([])
+  const [availablePlayers, setAvailablePlayers] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
   useEffect(() => {
-    async function loadData() {
+    const loadData = async () => {
       try {
         const [players, matchesData] = await Promise.all([
-          getCheckedInParticipants(tournamentId),
+          getAllParticipants(tournamentId),
           getTournamentMatches(tournamentId)
         ])
+        console.log('Loaded players:', players)
         setAvailablePlayers(players)
-        setMatches(matchesData)
+        setMatches(matchesData as Match[])
       } catch (err) {
         console.error('Error loading data:', err)
         setError('Erro ao carregar dados')

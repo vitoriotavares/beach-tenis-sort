@@ -55,6 +55,7 @@ export interface Database {
           email: string
           phone: string
           paid: boolean
+          checked_in: boolean
           created_at: string
           updated_at: string
         }
@@ -65,6 +66,7 @@ export interface Database {
           email: string
           phone: string
           paid?: boolean
+          checked_in?: boolean
           created_at?: string
           updated_at?: string
         }
@@ -75,6 +77,7 @@ export interface Database {
           email?: string
           phone?: string
           paid?: boolean
+          checked_in?: boolean
           created_at?: string
           updated_at?: string
         }
