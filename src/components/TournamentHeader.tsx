@@ -1,7 +1,8 @@
 'use client'
 
-import { CalendarIcon, ClockIcon, MapPinIcon, UserGroupIcon } from '@heroicons/react/24/outline'
+import { CalendarIcon, ClockIcon, MapPinIcon, UserGroupIcon, ArrowLeftIcon } from '@heroicons/react/24/outline'
 import type { Tournament } from '@/lib/supabase/types'
+import Link from 'next/link'
 
 interface TournamentHeaderProps {
   tournament: Tournament & { participants?: [{ count: number }] }
@@ -30,6 +31,12 @@ export function TournamentHeader({ tournament }: TournamentHeaderProps) {
   return (
     <div className="bg-white/80 backdrop-blur-sm shadow-lg border-b border-sand-200">
       <div className="container mx-auto px-4 py-6">
+        <div className="flex items-center mb-4">
+          <Link href="/" className="flex items-center text-ocean-600 hover:text-ocean-800 transition-colors">
+            <ArrowLeftIcon className="h-5 w-5 mr-1" />
+            <span className="text-sm font-medium">Voltar para torneios</span>
+          </Link>
+        </div>
         <div className="flex justify-between items-start">
           <div>
             <h1 className="text-3xl font-bold text-ocean-900 font-display">{tournament.title}</h1>

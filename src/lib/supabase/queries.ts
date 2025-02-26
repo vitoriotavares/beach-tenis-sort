@@ -106,23 +106,40 @@ export async function createParticipant(participant: {
   return data
 }
 
-export async function getCheckedInParticipants(tournamentId: string) {
-  const { data, error } = await supabase
-    .from('participants')
-    .select('id, name')
-    .eq('tournament_id', tournamentId)
-    .eq('checked_in', true)
-    .order('name')
+export async function getCheckedInParticipants(tournamentId: string): Promise<{ id: string; name: string }[]> {
+  console.log('Fetching checked-in participants for tournament:', tournamentId)
+  
+  try {
+    // Primeiro, tentamos com o filtro checked_in
+    const { data, error } = await supabase
+      .from('participants')
+      .select('id, name')
+      .eq('tournament_id', tournamentId)
+      .eq('checked_in', true)
+      .order('name')
 
-  if (error) {
-    console.error('Error fetching checked-in participants:', error)
-    throw error
+    if (error) {
+      // Se ocorrer um erro relacionado à coluna checked_in, buscamos todos os participantes
+      if (error.code === '42703') { // código de erro para "coluna não existe"
+        console.log('checked_in column does not exist yet, fetching all participants')
+        return getAllParticipants(tournamentId)
+      }
+      
+      console.error('Error fetching checked-in participants:', error)
+      throw error
+    }
+
+    return data || []
+  } catch (err) {
+    console.error('Error in getCheckedInParticipants:', err)
+    // Em caso de qualquer outro erro, retornamos todos os participantes
+    return getAllParticipants(tournamentId)
   }
-
-  return data || []
 }
 
-export async function getAllParticipants(tournamentId: string) {
+export async function getAllParticipants(tournamentId: string): Promise<{ id: string; name: string }[]> {
+  console.log('Fetching all participants for tournament:', tournamentId)
+  
   const { data, error } = await supabase
     .from('participants')
     .select('id, name')
@@ -134,6 +151,8 @@ export async function getAllParticipants(tournamentId: string) {
     throw error
   }
 
+  console.log('Participants data returned:', data)
+  
   return data || []
 }
 

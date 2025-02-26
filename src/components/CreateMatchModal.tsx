@@ -33,8 +33,13 @@ export function CreateMatchModal({ isOpen, onClose, onCreateMatch, availablePlay
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
-  // Log para debug
-  console.log('Available players:', availablePlayers)
+  // Logs para debug
+  console.log('CreateMatchModal rendered with props:', {
+    isOpen,
+    availablePlayers: availablePlayers ? availablePlayers.length : 0,
+    tournamentId
+  })
+  console.log('Available players array:', availablePlayers)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
