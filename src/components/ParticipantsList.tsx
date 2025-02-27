@@ -18,6 +18,9 @@ interface Participant {
   paid: boolean
   checked_in: boolean
   avatar_url?: string
+  tournament_id: string
+  created_at: string
+  updated_at: string
 }
 
 export function ParticipantsList({ tournamentId }: ParticipantsListProps) {

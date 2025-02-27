@@ -8,6 +8,7 @@ interface AuthContextType {
   user: User | null
   session: Session | null
   loading: boolean
+  isRedirecting: boolean
   signOut: () => Promise<void>
   signInWithGoogle: () => Promise<void>
 }
@@ -18,6 +19,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [session, setSession] = useState<Session | null>(null)
   const [loading, setLoading] = useState(true)
+  const [isRedirecting, setIsRedirecting] = useState(false)
 
   useEffect(() => {
     async function getInitialSession() {
@@ -58,17 +60,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signInWithGoogle = async () => {
     try {
+      setIsRedirecting(true)
+      
+      // Obter o URL do site a partir da variável de ambiente ou usar o origin atual
+      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || window.location.origin
+      
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
+          redirectTo: `${siteUrl}/auth/callback`,
         },
       })
       
       if (error) {
+        setIsRedirecting(false)
         throw error
       }
     } catch (error) {
+      setIsRedirecting(false)
       console.error('Error signing in with Google:', error)
       throw error
     }
@@ -78,6 +87,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     user,
     session,
     loading,
+    isRedirecting,
     signOut,
     signInWithGoogle,
   }

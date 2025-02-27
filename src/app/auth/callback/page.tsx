@@ -18,8 +18,8 @@ export default function AuthCallbackPage() {
       }
 
       if (session) {
-        // Redirecionar de volta para a página anterior ou para a home
-        router.back()
+        // Redirecionar para a página inicial em vez de voltar
+        router.push('/')
       } else {
         router.push('/')
       }

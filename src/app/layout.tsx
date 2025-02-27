@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { Inter, Montserrat } from 'next/font/google'
 import { AuthProvider } from '@/contexts/AuthContext'
+import { Navbar } from '@/components/Navbar'
 import './globals.css'
 
 const inter = Inter({ 
@@ -29,6 +30,7 @@ export default function RootLayout({
     <html lang="pt-BR" className={`${inter.variable} ${montserrat.variable}`}>
       <body className="min-h-screen bg-gradient-to-b from-sand-50 via-sand-100 to-ocean-50 font-sans">
         <AuthProvider>
+          <Navbar />
           {children}
         </AuthProvider>
       </body>

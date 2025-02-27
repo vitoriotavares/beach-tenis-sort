@@ -71,7 +71,28 @@ Se necessário, configure as seguintes variáveis de ambiente na Vercel:
 ```env
 # Exemplo (substitua pelos valores reais)
 NEXT_PUBLIC_API_URL=https://api.exemplo.com
+
+# Supabase
+NEXT_PUBLIC_SUPABASE_URL=your-project-url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+
+# URL do site em produção (importante para autenticação)
+NEXT_PUBLIC_SITE_URL=https://your-production-url.vercel.app
 ```
+
+## Configuração do Supabase para Autenticação
+
+Para que a autenticação funcione corretamente em produção, siga estes passos:
+
+1. Acesse o painel de controle do Supabase
+2. Vá para Authentication > URL Configuration
+3. Adicione o URL do seu site em produção (ex: https://your-production-url.vercel.app) em "Site URL"
+4. Vá para Authentication > Providers > Google
+5. Adicione o URL de redirecionamento em produção:
+   - https://your-production-url.vercel.app/auth/callback
+6. Certifique-se de que o URL de redirecionamento também esteja configurado no Console do Google Cloud Platform no projeto que fornece o OAuth
+
+Isso garantirá que o redirecionamento após a autenticação funcione corretamente em produção.
 
 ## Comandos Úteis
 

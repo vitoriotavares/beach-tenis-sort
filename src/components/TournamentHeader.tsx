@@ -13,7 +13,7 @@ interface TournamentHeaderProps {
 }
 
 export function TournamentHeader({ tournament, onParticipantRegistered }: TournamentHeaderProps) {
-  const { user, signInWithGoogle, loading } = useAuth()
+  const { user, signInWithGoogle, loading, isRedirecting } = useAuth()
   const [registering, setRegistering] = useState(false)
   const [registered, setRegistered] = useState(false)
   
@@ -41,6 +41,7 @@ export function TournamentHeader({ tournament, onParticipantRegistered }: Tourna
     try {
       // Se o usuário não estiver logado, inicia o fluxo de autenticação
       if (!user) {
+        if (isRedirecting) return; // Evita múltiplos redirecionamentos
         await signInWithGoogle()
         return
       }
@@ -69,7 +70,7 @@ export function TournamentHeader({ tournament, onParticipantRegistered }: Tourna
   
   // Determina o texto do botão
   const getButtonText = () => {
-    if (loading || registering) return 'Carregando...'
+    if (loading || registering || isRedirecting) return 'Carregando...'
     if (registered) return 'Inscrito'
     if (!user) return 'Inscrever-se'
     return 'Confirmar inscrição'
@@ -114,7 +115,7 @@ export function TournamentHeader({ tournament, onParticipantRegistered }: Tourna
           <button
             type="button"
             onClick={handleRegister}
-            disabled={loading || registering || registered || participantCount >= tournament.max_participants}
+            disabled={loading || registering || isRedirecting || registered || participantCount >= tournament.max_participants}
             className={`rounded-md px-4 py-2 text-sm font-semibold shadow-sm transition-colors ${
               registered 
                 ? 'bg-green-500 text-white hover:bg-green-600' 

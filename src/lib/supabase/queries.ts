@@ -113,7 +113,7 @@ export async function getCheckedInParticipants(tournamentId: string): Promise<Pa
     // Primeiro, tentamos com o filtro checked_in
     const { data, error } = await supabase
       .from('participants')
-      .select('id, name, email, phone, paid, checked_in, avatar_url')
+      .select('id, name, email, phone, paid, checked_in, avatar_url, tournament_id, created_at, updated_at')
       .eq('tournament_id', tournamentId)
       .eq('checked_in', true)
       .order('name')
@@ -140,7 +140,7 @@ export async function getCheckedInParticipants(tournamentId: string): Promise<Pa
 export async function getAllParticipants(tournamentId: string): Promise<Participant[]> {
   const { data, error } = await supabase
     .from('participants')
-    .select('id, name, email, phone, paid, checked_in, avatar_url')
+    .select('id, name, email, phone, paid, checked_in, avatar_url, tournament_id, created_at, updated_at')
     .eq('tournament_id', tournamentId)
     .order('name')
 
