@@ -128,12 +128,14 @@ export function TournamentList({ initialTournaments }: TournamentListProps) {
           <h1 className="text-3xl font-bold text-ocean-900 font-display">
             Torneios
           </h1>
-          <Link
-            href="/tournaments/new"
-            className="rounded-md bg-sunset-500 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-sunset-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sunset-600 transition-colors"
-          >
-            Criar Torneio
-          </Link>
+          {user && (
+            <Link
+              href="/tournaments/new"
+              className="rounded-md bg-sunset-500 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-sunset-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sunset-600 transition-colors"
+            >
+              Criar Torneio
+            </Link>
+          )}
         </div>
 
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">

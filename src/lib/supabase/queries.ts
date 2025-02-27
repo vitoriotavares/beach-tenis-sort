@@ -723,6 +723,7 @@ export async function createTournament(tournament: {
   start_time: string
   end_time: string
   max_participants: number
+  creator_id?: string
 }) {
   const { data, error } = await supabase
     .from('tournaments')

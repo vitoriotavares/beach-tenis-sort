@@ -3,8 +3,10 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { PlayerAvatar } from './PlayerAvatar'
-import { getTournamentParticipants } from '@/lib/supabase/queries'
+import { getTournamentParticipants, updateParticipant } from '@/lib/supabase/queries'
 import type { Participant } from '@/lib/supabase/types'
+import { CreditCardIcon } from '@heroicons/react/24/solid'
+import { PaymentModal } from './PaymentModal'
 
 interface UserRegistrationStatusProps {
   tournamentId: string
@@ -14,6 +16,7 @@ export function UserRegistrationStatus({ tournamentId }: UserRegistrationStatusP
   const { user } = useAuth()
   const [userParticipant, setUserParticipant] = useState<Participant | null>(null)
   const [loading, setLoading] = useState(true)
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false)
 
   useEffect(() => {
     async function checkUserRegistration() {
@@ -38,6 +41,27 @@ export function UserRegistrationStatus({ tournamentId }: UserRegistrationStatusP
 
     checkUserRegistration()
   }, [user, tournamentId])
+
+  const handleOpenPayment = () => {
+    if (userParticipant) {
+      setIsPaymentModalOpen(true)
+    }
+  }
+
+  const handlePaymentSuccess = async () => {
+    if (!userParticipant) return
+    
+    try {
+      await updateParticipant(userParticipant.id, { paid: true })
+      setUserParticipant({
+        ...userParticipant,
+        paid: true
+      })
+      setIsPaymentModalOpen(false)
+    } catch (err) {
+      console.error('Error updating payment status:', err)
+    }
+  }
 
   if (!user || loading) {
     return null
@@ -73,9 +97,29 @@ export function UserRegistrationStatus({ tournamentId }: UserRegistrationStatusP
             }`}>
               {userParticipant.checked_in ? 'Check-in realizado' : 'Aguardando check-in'}
             </span>
+
+            {!userParticipant.paid && (
+              <button
+                onClick={handleOpenPayment}
+                className="inline-flex items-center gap-1 rounded-md bg-primary-50 px-2 py-1 text-xs font-medium text-primary-700 hover:bg-primary-100"
+              >
+                <CreditCardIcon className="h-3.5 w-3.5" />
+                Pagar
+              </button>
+            )}
           </div>
         </div>
       </div>
+
+      {userParticipant && (
+        <PaymentModal
+          isOpen={isPaymentModalOpen}
+          onClose={() => setIsPaymentModalOpen(false)}
+          onSuccess={handlePaymentSuccess}
+          amount={50.00}
+          participant={userParticipant.name}
+        />
+      )}
     </div>
   )
 }

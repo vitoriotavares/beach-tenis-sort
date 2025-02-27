@@ -78,7 +78,7 @@ export default function TournamentPage({ params }: PageProps) {
       <div className="container mx-auto px-4 py-6">
         <UserRegistrationStatus tournamentId={params.id} />
         <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg border border-sand-200 p-6">
-          <Tabs activeTab={activeTab} onTabChange={setActiveTab} />
+          <Tabs activeTab={activeTab} onTabChange={setActiveTab} tournamentId={params.id} />
           <div className="mt-6">
             {activeTab === 'participants' && (
               <ParticipantsList tournamentId={params.id} />

@@ -7,6 +7,7 @@ export interface Tournament {
   end_time: string
   max_participants: number
   status: 'upcoming' | 'in_progress' | 'completed'
+  creator_id?: string
   created_at: string
   updated_at: string
 }

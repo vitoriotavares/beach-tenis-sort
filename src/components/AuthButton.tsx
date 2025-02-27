@@ -34,9 +34,12 @@ export function AuthButton({ onSuccess }: AuthButtonProps) {
       console.log('URL de redirecionamento:', redirectUrl)
       
       // Verificar se estamos em localhost e ajustar a porta se necessário
-      if (redirectUrl.includes('localhost:3000') && window.location.port === '3001') {
-        redirectUrl = redirectUrl.replace('localhost:3000', `localhost:${window.location.port}`)
-        console.log('URL de redirecionamento ajustado para porta local:', redirectUrl)
+      if (typeof window !== 'undefined' && 
+          window.location.hostname === 'localhost' && 
+          redirectUrl.includes('localhost')) {
+        // Usar a porta atual do navegador
+        redirectUrl = `${window.location.origin}/auth/callback`
+        console.log('URL de redirecionamento ajustado para desenvolvimento local:', redirectUrl)
       }
       
       // Tentar fazer login com Google

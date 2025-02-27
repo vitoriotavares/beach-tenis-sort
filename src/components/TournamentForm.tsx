@@ -3,9 +3,11 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createTournament } from '@/lib/supabase/queries'
+import { useAuth } from '@/contexts/AuthContext'
 
 export function TournamentForm() {
   const router = useRouter()
+  const { user } = useAuth()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState('')
 
@@ -13,6 +15,13 @@ export function TournamentForm() {
     e.preventDefault()
     setIsSubmitting(true)
     setError('')
+
+    // Verificar se o usuário está logado
+    if (!user) {
+      setError('Você precisa estar logado para criar um torneio.')
+      setIsSubmitting(false)
+      return
+    }
 
     const formData = new FormData(e.currentTarget)
     const data = {
@@ -22,6 +31,7 @@ export function TournamentForm() {
       start_time: formData.get('start_time') as string,
       end_time: formData.get('end_time') as string,
       max_participants: parseInt(formData.get('max_participants') as string),
+      creator_id: user.id,
     }
 
     try {
@@ -128,7 +138,7 @@ export function TournamentForm() {
       <div className="flex justify-end">
         <button
           type="submit"
-          disabled={isSubmitting}
+          disabled={isSubmitting || !user}
           className="rounded-md bg-sunset-500 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-sunset-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sunset-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isSubmitting ? 'Criando...' : 'Criar Torneio'}

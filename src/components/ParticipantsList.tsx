@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { CheckCircleIcon, CreditCardIcon } from '@heroicons/react/24/solid'
+import { CheckCircleIcon } from '@heroicons/react/24/solid'
 import { PlayerAvatar } from './PlayerAvatar'
 import { PaymentModal } from './PaymentModal'
 import { getTournamentParticipants, updateParticipant } from '@/lib/supabase/queries'
@@ -118,15 +118,6 @@ export function ParticipantsList({ tournamentId }: ParticipantsListProps) {
                       {participant.paid && <CheckCircleIcon className="h-3.5 w-3.5" />}
                       {participant.paid ? 'Pago' : 'Pendente'}
                     </span>
-                    {!participant.paid && (
-                      <button
-                        onClick={() => handleOpenPayment(participant)}
-                        className="inline-flex items-center gap-1 rounded-md bg-primary-50 px-2 py-1 text-xs font-medium text-primary-700 hover:bg-primary-100"
-                      >
-                        <CreditCardIcon className="h-3.5 w-3.5" />
-                        Pagar
-                      </button>
-                    )}
                   </div>
 
                   {/* Status de Check-in */}

@@ -33,6 +33,26 @@ export default function AuthCallbackPage() {
           return
         }
         
+        // Verificar se temos um hash com access_token (caso o redirecionamento tenha vindo com hash em vez de query params)
+        if (window.location.hash && window.location.hash.includes('access_token')) {
+          console.log('Found access_token in hash, setting session manually...')
+          
+          try {
+            // Tentar configurar a sessão com base no hash
+            const { data, error } = await supabase.auth.getSession()
+            
+            if (error) {
+              console.error('Error getting session after hash redirect:', error)
+            } else if (data?.session) {
+              console.log('Session successfully retrieved after hash redirect')
+            } else {
+              console.warn('No session found after hash redirect')
+            }
+          } catch (hashError) {
+            console.error('Error processing hash with access_token:', hashError)
+          }
+        }
+        
         // Obtemos a sessão do usuário
         console.log('Getting session from Supabase...')
         const { data: { session }, error } = await supabase.auth.getSession()
