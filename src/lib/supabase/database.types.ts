@@ -56,6 +56,8 @@ export interface Database {
           phone: string
           paid: boolean
           checked_in: boolean
+          user_id: string | null
+          avatar_url: string | null
           created_at: string
           updated_at: string
         }
@@ -67,6 +69,8 @@ export interface Database {
           phone: string
           paid?: boolean
           checked_in?: boolean
+          user_id?: string | null
+          avatar_url?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -78,6 +82,8 @@ export interface Database {
           phone?: string
           paid?: boolean
           checked_in?: boolean
+          user_id?: string | null
+          avatar_url?: string | null
           created_at?: string
           updated_at?: string
         }

@@ -2,6 +2,14 @@
 
 Aplicativo para gerenciamento de torneios de beach tennis.
 
+## Funcionalidades
+
+- Criação e gerenciamento de torneios
+- Registro de participantes
+- Sorteio automático de partidas
+- Inscrição em torneios via autenticação Google
+- Acompanhamento de status de pagamento e check-in
+
 ## Tecnologias
 
 - Next.js 14
@@ -10,6 +18,7 @@ Aplicativo para gerenciamento de torneios de beach tennis.
 - Tailwind CSS
 - Zustand (Gerenciamento de Estado)
 - Headless UI (Componentes)
+- Supabase (Autenticação e Banco de Dados)
 
 ## Desenvolvimento Local
 

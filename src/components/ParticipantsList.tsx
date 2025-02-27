@@ -17,6 +17,7 @@ interface Participant {
   phone: string
   paid: boolean
   checked_in: boolean
+  avatar_url?: string
 }
 
 export function ParticipantsList({ tournamentId }: ParticipantsListProps) {
@@ -86,16 +87,22 @@ export function ParticipantsList({ tournamentId }: ParticipantsListProps) {
       </div>
 
       <div className="divide-y divide-gray-200">
-        {participants.map((participant) => (
-          <div
-            key={participant.id}
-            className="flex items-center justify-between p-4 hover:bg-gray-50"
-          >
-            <div className="flex items-center gap-4">
-              <PlayerAvatar name={participant.name} />
-              <div>
-                <p className="text-sm font-medium text-gray-900">{participant.name}</p>
-                <div className="flex items-center gap-3 mt-1">
+        <ul role="list" className="divide-y divide-gray-200">
+          {participants.map((participant) => (
+            <li key={participant.id} className="px-4 py-4 sm:px-6">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center">
+                  <PlayerAvatar 
+                    name={participant.name} 
+                    imageUrl={participant.avatar_url}
+                    className="h-10 w-10" 
+                  />
+                  <div className="ml-4">
+                    <div className="font-medium text-gray-900">{participant.name}</div>
+                    <div className="text-sm text-gray-500">{participant.email}</div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
                   {/* Status de Pagamento */}
                   <div className="flex items-center gap-2">
                     <span 
@@ -132,9 +139,9 @@ export function ParticipantsList({ tournamentId }: ParticipantsListProps) {
                   </span>
                 </div>
               </div>
-            </div>
-          </div>
-        ))}
+            </li>
+          ))}
+        </ul>
       </div>
 
       {participants.length === 0 && (

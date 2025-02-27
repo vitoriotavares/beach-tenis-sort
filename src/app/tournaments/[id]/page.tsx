@@ -1,11 +1,12 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { getTournamentById } from '@/lib/supabase/queries'
 import { TournamentHeader } from '@/components/TournamentHeader'
 import { ParticipantsList } from '@/components/ParticipantsList'
 import { MatchesList } from '@/components/MatchesList'
 import { Tabs } from '@/components/Tabs'
+import { UserRegistrationStatus } from '@/components/UserRegistrationStatus'
 import type { Tournament } from '@/lib/supabase/types'
 
 interface PageProps {
@@ -20,21 +21,29 @@ export default function TournamentPage({ params }: PageProps) {
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState('participants')
 
-  useEffect(() => {
-    async function loadTournament() {
-      try {
-        const data = await getTournamentById(params.id)
-        setTournament(data)
-      } catch (err) {
-        console.error('Error loading tournament:', err)
-        setError('Erro ao carregar torneio')
-      } finally {
-        setLoading(false)
-      }
+  const loadTournament = useCallback(async () => {
+    try {
+      setLoading(true)
+      const data = await getTournamentById(params.id)
+      setTournament(data)
+    } catch (err) {
+      console.error('Error loading tournament:', err)
+      setError('Erro ao carregar torneio')
+    } finally {
+      setLoading(false)
     }
-
-    loadTournament()
   }, [params.id])
+
+  useEffect(() => {
+    loadTournament()
+  }, [loadTournament])
+
+  // Função para recarregar os dados do torneio quando um novo participante se inscrever
+  const handleParticipantRegistered = useCallback(() => {
+    loadTournament()
+    // Mudar para a aba de participantes
+    setActiveTab('participants')
+  }, [loadTournament])
 
   if (loading) {
     return (
@@ -62,8 +71,12 @@ export default function TournamentPage({ params }: PageProps) {
 
   return (
     <div className="min-h-screen">
-      <TournamentHeader tournament={tournament} />
+      <TournamentHeader 
+        tournament={tournament} 
+        onParticipantRegistered={handleParticipantRegistered} 
+      />
       <div className="container mx-auto px-4 py-6">
+        <UserRegistrationStatus tournamentId={params.id} />
         <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg border border-sand-200 p-6">
           <Tabs activeTab={activeTab} onTabChange={setActiveTab} />
           <div className="mt-6">

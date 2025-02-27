@@ -39,7 +39,7 @@ export async function getTournamentById(id: string) {
 export async function getTournamentParticipants(tournamentId: string) {
   const { data, error } = await supabase
     .from('participants')
-    .select('*')
+    .select('id, name, email, phone, paid, checked_in, avatar_url, created_at, updated_at')
     .eq('tournament_id', tournamentId)
     .order('created_at', { ascending: true })
 
@@ -106,14 +106,14 @@ export async function createParticipant(participant: {
   return data
 }
 
-export async function getCheckedInParticipants(tournamentId: string): Promise<{ id: string; name: string }[]> {
+export async function getCheckedInParticipants(tournamentId: string): Promise<Participant[]> {
   console.log('Fetching checked-in participants for tournament:', tournamentId)
   
   try {
     // Primeiro, tentamos com o filtro checked_in
     const { data, error } = await supabase
       .from('participants')
-      .select('id, name')
+      .select('id, name, email, phone, paid, checked_in, avatar_url')
       .eq('tournament_id', tournamentId)
       .eq('checked_in', true)
       .order('name')
@@ -137,22 +137,18 @@ export async function getCheckedInParticipants(tournamentId: string): Promise<{ 
   }
 }
 
-export async function getAllParticipants(tournamentId: string): Promise<{ id: string; name: string }[]> {
-  console.log('Fetching all participants for tournament:', tournamentId)
-  
+export async function getAllParticipants(tournamentId: string): Promise<Participant[]> {
   const { data, error } = await supabase
     .from('participants')
-    .select('id, name')
+    .select('id, name, email, phone, paid, checked_in, avatar_url')
     .eq('tournament_id', tournamentId)
     .order('name')
 
   if (error) {
-    console.error('Error fetching all participants:', error)
+    console.error('Error fetching participants:', error)
     throw error
   }
 
-  console.log('Participants data returned:', data)
-  
   return data || []
 }
 
@@ -408,6 +404,58 @@ export async function createMatch(match: {
     team1: [team1Player1Name, team1Player2Name],
     team2: [team2Player1Name, team2Player2Name]
   } as MatchResult;
+}
+
+// User Registration
+export async function registerUserForTournament(tournamentId: string, userData: {
+  id: string;
+  name: string;
+  email: string;
+  avatar_url?: string;
+}) {
+  console.log('Registering user for tournament:', { tournamentId, userData })
+  
+  // Verificar se o usuário já está inscrito neste torneio
+  const { data: existingParticipant, error: checkError } = await supabase
+    .from('participants')
+    .select('id')
+    .eq('tournament_id', tournamentId)
+    .eq('email', userData.email)
+    .maybeSingle()
+  
+  if (checkError) {
+    console.error('Error checking existing participant:', checkError)
+    throw checkError
+  }
+  
+  // Se o usuário já estiver inscrito, retornamos o participante existente
+  if (existingParticipant) {
+    console.log('User already registered for this tournament')
+    return existingParticipant
+  }
+  
+  // Caso contrário, criamos um novo participante
+  const { data, error } = await supabase
+    .from('participants')
+    .insert({
+      tournament_id: tournamentId,
+      name: userData.name,
+      email: userData.email,
+      phone: '', // Campo obrigatório, mas será preenchido posteriormente
+      paid: false,
+      checked_in: false,
+      user_id: userData.id,
+      avatar_url: userData.avatar_url
+    })
+    .select()
+    .single()
+  
+  if (error) {
+    console.error('Error registering user for tournament:', error)
+    throw error
+  }
+  
+  return data
 }
 
 // Tournament Status

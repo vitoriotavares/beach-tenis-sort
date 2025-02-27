@@ -19,6 +19,8 @@ export interface Participant {
   phone: string
   paid: boolean
   checked_in: boolean
+  user_id?: string
+  avatar_url?: string
   created_at: string
   updated_at: string
 }
